@@ -46,7 +46,7 @@ static const NSString * CSToastQueueKey             = @"CSToastQueueKey";
 @interface UIView (ToastPrivate)
 
 /**
- These private methods are being prefixed with "cs_" to reduce the likelihood of non-obvious 
+ These private methods are being prefixed with "cs_" to reduce the likelihood of non-obvious
  naming conflicts with other UIView methods.
  
  @discussion Should the public API also use the cs_ prefix? Technically it should, but it
@@ -178,7 +178,7 @@ static const NSString * CSToastQueueKey             = @"CSToastQueueKey";
 - (void)cs_hideToast:(UIView *)toast {
     [self cs_hideToast:toast fromTap:NO];
 }
-    
+
 - (void)cs_hideToast:(UIView *)toast fromTap:(BOOL)fromTap {
     NSTimer *timer = (NSTimer *)objc_getAssociatedObject(toast, &CSToastTimerKey);
     [timer invalidate];
@@ -257,6 +257,7 @@ static const NSString * CSToastQueueKey             = @"CSToastQueueKey";
         imageRect.size.height = imageView.bounds.size.height;
     }
     
+    CGSize expectedSizeTitle = CGSizeZero;
     if (title != nil) {
         titleLabel = [[UILabel alloc] init];
         titleLabel.numberOfLines = style.titleNumberOfLines;
@@ -269,13 +270,13 @@ static const NSString * CSToastQueueKey             = @"CSToastQueueKey";
         titleLabel.text = title;
         
         // size the title label according to the length of the text
-        CGSize maxSizeTitle = CGSizeMake((self.bounds.size.width * style.maxWidthPercentage) - imageRect.size.width, self.bounds.size.height * style.maxHeightPercentage);
-        CGSize expectedSizeTitle = [titleLabel sizeThatFits:maxSizeTitle];
+        CGSize maxSizeTitle = CGSizeMake((self.bounds.size.width * style.maxWidthPercentage) - imageRect.size.width - 2 * style.horizontalPadding, self.bounds.size.height * style.maxHeightPercentage);
+        expectedSizeTitle = [titleLabel sizeThatFits:maxSizeTitle];
         // UILabel can return a size larger than the max size when the number of lines is 1
         expectedSizeTitle = CGSizeMake(MIN(maxSizeTitle.width, expectedSizeTitle.width), MIN(maxSizeTitle.height, expectedSizeTitle.height));
-        titleLabel.frame = CGRectMake(0.0, 0.0, expectedSizeTitle.width, expectedSizeTitle.height);
     }
     
+    CGSize expectedSizeMessage = CGSizeZero;
     if (message != nil) {
         messageLabel = [[UILabel alloc] init];
         messageLabel.numberOfLines = style.messageNumberOfLines;
@@ -287,16 +288,17 @@ static const NSString * CSToastQueueKey             = @"CSToastQueueKey";
         messageLabel.alpha = 1.0;
         messageLabel.text = message;
         
-        CGSize maxSizeMessage = CGSizeMake((self.bounds.size.width * style.maxWidthPercentage) - imageRect.size.width, self.bounds.size.height * style.maxHeightPercentage);
-        CGSize expectedSizeMessage = [messageLabel sizeThatFits:maxSizeMessage];
+        CGSize maxSizeMessage = CGSizeMake((self.bounds.size.width * style.maxWidthPercentage) - imageRect.size.width - 2 * style.horizontalPadding, self.bounds.size.height * style.maxHeightPercentage);
+        expectedSizeMessage = [messageLabel sizeThatFits:maxSizeMessage];
         // UILabel can return a size larger than the max size when the number of lines is 1
         expectedSizeMessage = CGSizeMake(MIN(maxSizeMessage.width, expectedSizeMessage.width), MIN(maxSizeMessage.height, expectedSizeMessage.height));
-        messageLabel.frame = CGRectMake(0.0, 0.0, expectedSizeMessage.width, expectedSizeMessage.height);
     }
     
     CGRect titleRect = CGRectZero;
     
     if(titleLabel != nil) {
+        // Ensure to set both title and message frames to the same width, so the 'textAlignment' property will have effect:
+        titleLabel.frame = CGRectMake(0.0, 0.0, MAX(expectedSizeTitle.width, expectedSizeMessage.width), expectedSizeTitle.height);
         titleRect.origin.x = imageRect.origin.x + imageRect.size.width + style.horizontalPadding;
         titleRect.origin.y = style.verticalPadding;
         titleRect.size.width = titleLabel.bounds.size.width;
@@ -306,6 +308,8 @@ static const NSString * CSToastQueueKey             = @"CSToastQueueKey";
     CGRect messageRect = CGRectZero;
     
     if(messageLabel != nil) {
+        // Ensure to set both title and message frames to the same width, so the 'textAlignment' property will have effect:
+        messageLabel.frame = CGRectMake(0.0, 0.0, MAX(expectedSizeTitle.width, expectedSizeMessage.width), expectedSizeMessage.height);
         messageRect.origin.x = imageRect.origin.x + imageRect.size.width + style.horizontalPadding;
         messageRect.origin.y = titleRect.origin.y + titleRect.size.height + style.verticalPadding;
         messageRect.size.width = messageLabel.bounds.size.width;
